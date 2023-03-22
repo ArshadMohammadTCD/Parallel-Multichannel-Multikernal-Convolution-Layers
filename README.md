@@ -1,3 +1,6 @@
+## This repo was developed by Arshad Rehman Mohammed and Declan Quinn
+
+
 # Parallel-Multichannel-Multikernal-Convolution-Layers
 Parallelising a aspects of a convolutional neural network (CNN).
 
