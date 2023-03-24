@@ -304,7 +304,9 @@ void multichannel_conv(float *** image, int16_t **** kernels,
       for ( h = 0; h < height; h++ ) {
         // reset sum
         double sum = 0.0;
+        // for each layer channel is broken up in array imagine like a thread
         for ( c = 0; c < nchannels; c++ ) {
+          // Surrounding Values?
           for ( x = 0; x < kernel_order; x++) {
             for ( y = 0; y < kernel_order; y++ ) {
               sum += image[w+x][h+y][c] * kernels[m][c][x][y];
