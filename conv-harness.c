@@ -38,7 +38,7 @@
 #include <omp.h>
 #include <math.h>
 #include <stdint.h>
-
+#include <x86intrin.h>
 /* the following two definitions of DEBUGGING control whether or not
    debugging information is written out. To put the program into
    debugging mode, uncomment the following line: */
@@ -329,7 +329,7 @@ void student_conv(float *** image, int16_t **** kernels, float *** output,
   // insert your own code instead
   int h, w, x, y, c, m;
   // for some m number of kernals
-  
+  #pragma omp parallel for private(h, w, x, y, c, m)  
   for ( m = 0; m < nkernels; m++ ) {
     // for each width and height
     for ( w = 0; w < width; w++ ) {
@@ -349,8 +349,8 @@ void student_conv(float *** image, int16_t **** kernels, float *** output,
       }
     }
   }
-  multichannel_conv(image, kernels, output, width,
-                    height, nchannels, nkernels, kernel_order);
+  //multichannel_conv(image, kernels, output, width,
+  //                  height, nchannels, nkernels, kernel_order);
 }
 
 int main(int argc, char ** argv)
