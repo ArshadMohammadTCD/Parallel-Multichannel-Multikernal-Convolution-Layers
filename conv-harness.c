@@ -331,14 +331,19 @@ void student_conv(float *** image, int16_t **** kernels, float *** output,
   // for some m number of kernals
   #pragma omp parallel for private(h, w, x, y, c, m)  
   for ( m = 0; m < nkernels; m++ ) {
+    int thread = omp_get_thread_num();  // get thread number on creation
+    printf("[DEBUG] Opened Thread: %d", thread);
     // for each width and height
     for ( w = 0; w < width; w++ ) {
       for ( h = 0; h < height; h++ ) {
         // reset sum
         double sum = 0.0;
-        // for each layer channel is broken up in array imagine like a thread
+        // for each layer channel is broken up in array
+        #pragma omp parallel for private(h, w, x, y, c, m, sum)
         for ( c = 0; c < nchannels; c++ ) {
           // Surrounding Values?
+
+          // VECTORIZE THIS PART
           for ( x = 0; x < kernel_order; x++) {
             for ( y = 0; y < kernel_order; y++ ) {
               sum += image[w+x][h+y][c] * kernels[m][c][x][y];
@@ -348,7 +353,9 @@ void student_conv(float *** image, int16_t **** kernels, float *** output,
         }
       }
     }
+    printf("[DEBUG] Closed Thread: %d", thread);  // print that you closed the thread
   }
+
   //multichannel_conv(image, kernels, output, width,
   //                  height, nchannels, nkernels, kernel_order);
 }
