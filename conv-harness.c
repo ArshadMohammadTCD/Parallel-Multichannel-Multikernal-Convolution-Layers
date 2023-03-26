@@ -300,14 +300,16 @@ void multichannel_conv(float *** image, int16_t **** kernels,
   // for some m number of kernals
 
   for ( m = 0; m < nkernels; m++ ) {
+                    // THREADED PART 1 STARTS
     // for each width and height
     for ( w = 0; w < width; w++ ) {
       for ( h = 0; h < height; h++ ) {
+                // THREADED PART 2 STARTS
         // reset sum
         double sum = 0.0;
         // for each layer channel is broken up in array imagine like a thread
         for ( c = 0; c < nchannels; c++ ) {
-          // Surrounding Values?
+          // Calculating the average of our square
           for ( x = 0; x < kernel_order; x++) {
             for ( y = 0; y < kernel_order; y++ ) {
               sum += image[w+x][h+y][c] * kernels[m][c][x][y];
@@ -315,8 +317,10 @@ void multichannel_conv(float *** image, int16_t **** kernels,
           }
           output[m][w][h] = (float) sum; // output[kernal][width][height] = calculated sum
         }
+                 // THREADED PART 2 ENDS
       }
     }
+                        // THREADED PART 1 ENDS
   }
 }
 
@@ -325,6 +329,10 @@ void student_conv(float *** image, int16_t **** kernels, float *** output,
                int width, int height, int nchannels, int nkernels,
                int kernel_order)
 {
+
+  
+
+  /*
   // this call here is just dummy code that calls the slow, simple, correct version.
   // insert your own code instead
   int h, w, x, y, c, m;
