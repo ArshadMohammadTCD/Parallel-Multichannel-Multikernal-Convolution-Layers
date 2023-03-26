@@ -339,7 +339,7 @@ void student_conv(float *** image, int16_t **** kernels, float *** output,
         // reset sum
         double sum = 0.0;
         // for each layer channel is broken up in array
-    //    #pragma omp parallel for private(h, w, x, y, c, m, sum)
+//        #pragma omp parallel for private(h, w, x, y, c, m, sum)
         for ( c = 0; c < nchannels; c++ ) {
    //       printf("[DEBUG] Opened Thread: %d\n", thread);
           
@@ -366,12 +366,16 @@ void student_conv(float *** image, int16_t **** kernels, float *** output,
               // Multiply vectors to format (image1*kernal1, image2*kernal2,...)
                 __m128 mulV = _mm_mul_ps(imageV, kernalV);
               
+
+
+                __m128 sumV = _mm_hadd_ps(mulV, mulV);
+                sum+= mulV[0];
  
             // add vectors
-                sum += mulV[0];
-                sum += mulV[1];
-                sum += mulV[2];
-                sum += mulV[3];
+             //   sum += mulV[0];
+             //   sum += mulV[1];
+             //   sum += mulV[2];
+             //   sum += mulV[3];
 
 
             }
@@ -408,7 +412,7 @@ int main(int argc, char ** argv)
   float *** image;
   int16_t **** kernels;
   float *** control_output, *** output;
-  long long mul_time;
+  long long student_mul_time, david_mul_time;
   int width, height, kernel_order, nchannels, nkernels;
   struct timeval start_time;
   struct timeval stop_time;
@@ -457,9 +461,9 @@ int main(int argc, char ** argv)
 
   /* record finishing time */
   gettimeofday(&stop_time, NULL);
-  mul_time = (stop_time.tv_sec - start_time.tv_sec) * 1000000L +
+  student_mul_time = (int)(stop_time.tv_sec - start_time.tv_sec) * 1000000L +
     (stop_time.tv_usec - start_time.tv_usec);
-  printf("Student conv time: %lld microseconds\n", mul_time);
+  printf("Student conv time: %lld microseconds\n", student_mul_time);
   
   gettimeofday(&start_time, NULL);
 
@@ -467,11 +471,13 @@ int main(int argc, char ** argv)
                     height, nchannels, nkernels, kernel_order);
   gettimeofday(&stop_time, NULL);
 
-  mul_time = (stop_time.tv_sec - start_time.tv_sec) * 1000000L +
+  david_mul_time = (stop_time.tv_sec - start_time.tv_sec) * 1000000L +
     (stop_time.tv_usec - start_time.tv_usec);
-  printf("David conv time: %lld microseconds\n", mul_time);
+  printf("David conv time: %lld microseconds\n", david_mul_time);
   
-    
+  float ratio_speed_up = (float)david_mul_time/(float)student_mul_time;
+
+  printf("Optimize rate: %f times\n", ratio_speed_up);
 
 
   DEBUGGING(write_out(output, nkernels, width, height));
