@@ -331,7 +331,7 @@ void student_conv(float *** image, int16_t **** kernels, float *** output,
   // for some m number of kernals
   #pragma omp parallel for private(h, w, x, y, c, m)  
   for ( m = 0; m < nkernels; m++ ) {
-    int thread = omp_get_thread_num();  // get thread number on creation
+    //int thread = omp_get_thread_num();  // get thread number on creation
   //  printf("[DEBUG] Opened Thread: %d\n", thread);
     // for each width and height
     for ( w = 0; w < width; w++ ) {
