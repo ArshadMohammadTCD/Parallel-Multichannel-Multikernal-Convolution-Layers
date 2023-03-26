@@ -332,51 +332,67 @@ void student_conv(float *** image, int16_t **** kernels, float *** output,
   #pragma omp parallel for private(h, w, x, y, c, m)  
   for ( m = 0; m < nkernels; m++ ) {
     int thread = omp_get_thread_num();  // get thread number on creation
-    printf("[DEBUG] Opened Thread: %d", thread);
+  //  printf("[DEBUG] Opened Thread: %d\n", thread);
     // for each width and height
     for ( w = 0; w < width; w++ ) {
       for ( h = 0; h < height; h++ ) {
         // reset sum
-        float sum = 0.0;
+        double sum = 0.0;
         // for each layer channel is broken up in array
-        #pragma omp parallel for private(h, w, x, y, c, m, sum)
+    //    #pragma omp parallel for private(h, w, x, y, c, m, sum)
         for ( c = 0; c < nchannels; c++ ) {
-          printf("[DEBUG] Opened Thread: %d", thread);
+   //       printf("[DEBUG] Opened Thread: %d\n", thread);
           
 
-          for (x=0; x< (kernal_order - 3); x+=4){
-            for (y=0; y<(kernal_order-3); y+=4){
-              __m128 imageV = __mm_loadu_ps(image[w+x][h+y][c]);
-              __m128 kernalV = __mm_loadu_ps(kernels[m][c][x][y]);
+          for (x=0; x< (kernel_order); x++){
+            for (y=0; y<(kernel_order-3); y+=4){
+
+                int tmp1 = image[w+x][h+y][c];
+                int tmp2 = image[w+x][h+y+1][c];
+                int tmp3 = image[w+x][h+y+2][c];
+                int tmp4 = image[w+x][h+y+3][c];
+                __m128 imageV = _mm_set_ps(tmp1, tmp2, tmp3, tmp4);
+
+                
+                int temp1 = kernels[m][c][x][y] << 16 | 0; 
+                int temp2 = kernels[m][c][x][y+1] << 16 | 0;
+                int temp3 = kernels[m][c][x][y+2] << 16 | 0;
+                int temp4 = kernels[m][c][x][y+3] << 16 | 0;
+                __m128i vec = _mm_set_epi32(temp1, temp2, temp3, temp4);
+                __m128 floatvec = _mm_cvtepi32_ps(vec); 
+                
+                __m128 kernalV = floatvec;
+              //__m128 kernalV = _mm_loadu_ps((kernels[m][c][x][y]));
               // Multiply vectors to format (image1*kernal1, image2*kernal2,...)
-              __m128 mulV = __mm_mul_ps(imageV, kernalV);
+                __m128 mulV = _mm_mul_ps(imageV, kernalV);
               
-              // add vectors
-              sum += mulV[0];
-              sum += mulV[1];
-              sum += mulV[2];
-              sum += mulV[3];
+ 
+            // add vectors
+                sum += mulV[0];
+                sum += mulV[1];
+                sum += mulV[2];
+                sum += mulV[3];
 
 
             }
             //postloop y
-            for (; y<(kernal_order); y++){
+            for (; y<(kernel_order); y++){
               sum += image[w+x][h+y][c] * kernels[m][c][x][y];
             }
           }
           //postloop x
-          for ( ; x < kernel_order; x++) {
-            for ( y = 0; y < kernel_order; y++ ) {
-              sum += image[w+x][h+y][c] * kernels[m][c][x][y];
-            }
-          }
+          //for ( ; x < kernel_order; x++) {
+           // for ( y = 0; y < kernel_order; y++ ) {
+             // sum += image[w+x][h+y][c] * kernels[m][c][x][y];
+            //} 
+         // }
 
           output[m][w][h] = (float) sum; // output[kernal][width][height] = calculated sum
-          printf("[DEBUG] Closed Thread: %d", thread);
+  //        printf("[DEBUG] Closed Thread: %d\n", thread);
         }
       }
     }
-    printf("[DEBUG] Closed Thread: %d", thread);  // print that you closed the thread
+//    printf("[DEBUG] Closed Thread: %d\n", thread);  // print that you closed the thread
   }
 
   //multichannel_conv(image, kernels, output, width,
