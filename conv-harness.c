@@ -337,19 +337,42 @@ void student_conv(float *** image, int16_t **** kernels, float *** output,
     for ( w = 0; w < width; w++ ) {
       for ( h = 0; h < height; h++ ) {
         // reset sum
-        double sum = 0.0;
+        float sum = 0.0;
         // for each layer channel is broken up in array
         #pragma omp parallel for private(h, w, x, y, c, m, sum)
         for ( c = 0; c < nchannels; c++ ) {
-          // Surrounding Values?
+          printf("[DEBUG] Opened Thread: %d", thread);
+          
 
-          // VECTORIZE THIS PART
-          for ( x = 0; x < kernel_order; x++) {
+          for (x=0; x< (kernal_order - 3); x+=4){
+            for (y=0; y<(kernal_order-3); y+=4){
+              __m128 imageV = __mm_loadu_ps(image[w+x][h+y][c]);
+              __m128 kernalV = __mm_loadu_ps(kernels[m][c][x][y]);
+              // Multiply vectors to format (image1*kernal1, image2*kernal2,...)
+              __m128 mulV = __mm_mul_ps(imageV, kernalV);
+              
+              // add vectors
+              sum += mulV[0];
+              sum += mulV[1];
+              sum += mulV[2];
+              sum += mulV[3];
+
+
+            }
+            //postloop y
+            for (; y<(kernal_order); y++){
+              sum += image[w+x][h+y][c] * kernels[m][c][x][y];
+            }
+          }
+          //postloop x
+          for ( ; x < kernel_order; x++) {
             for ( y = 0; y < kernel_order; y++ ) {
               sum += image[w+x][h+y][c] * kernels[m][c][x][y];
             }
           }
+
           output[m][w][h] = (float) sum; // output[kernal][width][height] = calculated sum
+          printf("[DEBUG] Closed Thread: %d", thread);
         }
       }
     }
