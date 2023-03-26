@@ -460,6 +460,19 @@ int main(int argc, char ** argv)
   mul_time = (stop_time.tv_sec - start_time.tv_sec) * 1000000L +
     (stop_time.tv_usec - start_time.tv_usec);
   printf("Student conv time: %lld microseconds\n", mul_time);
+  
+  gettimeofday(&start_time, NULL);
+
+  multichannel_conv(image, kernels, output, width,
+                    height, nchannels, nkernels, kernel_order);
+  gettimeofday(&stop_time, NULL);
+
+  mul_time = (stop_time.tv_sec - start_time.tv_sec) * 1000000L +
+    (stop_time.tv_usec - start_time.tv_usec);
+  printf("David conv time: %lld microseconds\n", mul_time);
+  
+    
+
 
   DEBUGGING(write_out(output, nkernels, width, height));
 
