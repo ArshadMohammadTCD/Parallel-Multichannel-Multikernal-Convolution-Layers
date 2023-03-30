@@ -325,51 +325,51 @@ void student_conv(float *** image, int16_t **** kernels, float *** output,
                int kernel_order)
 {
 
+  // Writing a parallel version of the multichannel_conv function
+  // Converting the for loops to fusion loops
+
   int h, w, x, y, c, m;
+  for(int loopCounter0 = 0; n<(nkernels*width*height); n++)
+  {
+    int m = loopCounter0/(width*height);
+    int w = (loopCounter0%(width*height))/height;
+    int h = (loopCounter0%(width*height))%height;
+    
+    double sum = 0.0;
+
+    for(int loopCounter1 = 0; loopCounter1<(nchannels*kernel_order*kernel_order); loopCounter1++)
+    {
+      int c = loopCounter1/(kernel_order*kernel_order);
+      int x = (loopCounter1%(kernel_order*kernel_order))/kernel_order;
+      int y = (loopCounter1%(kernel_order*kernel_order))%kernel_order;
+      
+      sum += image[w+x][h+y][c] * kernels[m][c][x][y];
+
+      if (x == 0)
+      {
+        output[m][w][h] = (float) sum;
+      }
+
+    }
+  }
+
 
   //#pragma omp parallel for private(h, w, x, y, c, m)  
-  for ( m = 0; m < nkernels; m++ ) {
-
-
-    for ( w = 0; w < width; w++ ) {
-      for ( h = 0; h < height; h++ ) {
-        // reset sum
-        double sum = 0.0;
-
-
-        for ( c = 0; c < nchannels; c++ ) {
-          
-
-          for (x=0; x< (kernel_order); x++){
-            for (y=0; y<(kernel_order-3); y+=4){            
-
-
-                float imageArray[4] = {image[w+x][h+y][c], image[w+x][h+y+1][c], image[w+x][h+y+2][c], image[w+x][h+y+3][c]};
-                __m128 imageV = _mm_loadu_ps(imageArray);
-                //float kernalArray[4] = {(float)(kernels[m][c][x][y] << 16 | 0), (float)(kernels[m][c][x][y+1] << 16 | 0), (float)(kernels[m][c][x][y+2] << 16 | 0), (float)(kernels[m][c][x][y+3] << 16 | 0 )};                
-                __m128 kernalV = _mm_loadu_ps((float)(kernels[m][c][x][y]));
-                // __m128 kernalV = floatvec;
-              // Multiply vectors to format (image1*kernal1, image2*kernal2,...)
-                __m128 mulV = _mm_mul_ps(imageV, kernalV);
-                __m128 sumV = _mm_hadd_ps(mulV, mulV);
-                // sum of result
-                sum+= mulV[0];
-
-            }
-
-            for (; y<(kernel_order); y++){
-              sum += image[w+x][h+y][c] * kernels[m][c][x][y];
-            }
-          }
-
-
-          output[m][w][h] = (float) sum; // output[kernal][width][height] = calculated sum
-
-        }
-      }
-    }
-
-  }
+  // for ( m = 0; m < nkernels; m++ ) {
+  //   for ( w = 0; w < width; w++ ) {
+  //     for ( h = 0; h < height; h++ ) {
+  //       double sum = 0.0;
+  //       for ( c = 0; c < nchannels; c++ ) {
+  //         for ( x = 0; x < kernel_order; x++) {
+  //           for ( y = 0; y < kernel_order; y++ ) {
+  //             sum += image[w+x][h+y][c] * kernels[m][c][x][y];
+  //           }
+  //         }
+  //         output[m][w][h] = (float) sum;
+  //       }
+  //     }
+  //   }
+  // }
 }
 
 
