@@ -337,34 +337,39 @@ void student_conv(float *** image, int16_t **** kernels, float *** output,
         double sum = 0.0;
 
 
-        for ( c = 0; c < nchannels; c++ ) {
+        for ( c = 0; c < nchannels-3; c+=4 ) {
           
 
           for (x=0; x< (kernel_order); x++){
-            for (y=0; y<(kernel_order-3); y+=4){            
+            for (y=0; y<(kernel_order-3); y++){            
 
 
-                float imageArray[4] = {image[w+x][h+y][c], image[w+x][h+y+1][c], image[w+x][h+y+2][c], image[w+x][h+y+3][c]};
-                __m128 imageV = _mm_loadu_ps(imageArray);
-                //float kernalArray[4] = {(float)(kernels[m][c][x][y] << 16 | 0), (float)(kernels[m][c][x][y+1] << 16 | 0), (float)(kernels[m][c][x][y+2] << 16 | 0), (float)(kernels[m][c][x][y+3] << 16 | 0 )};                
-                __m128 kernalV = _mm_loadu_ps((float)(kernels[m][c][x][y]));
-                // __m128 kernalV = floatvec;
+                // float imageArray[4] = {image[w+x][h+y][c], image[w+x][h+y][c+1], image[w+x][h+y][c+2], image[w+x][h+y][c+3]};
+                __m128 imageV = _mm_loadu_ps(&(image[w+x][h+y][c]));
+
+
               // Multiply vectors to format (image1*kernal1, image2*kernal2,...)
+
+                float kernalVal = (float)(kernels[m][c][x][y] << 16 | 0);
+                __m128 kernelV = _mm_set_ps1(kernelVal);
+
                 __m128 mulV = _mm_mul_ps(imageV, kernalV);
                 __m128 sumV = _mm_hadd_ps(mulV, mulV);
                 // sum of result
                 sum+= mulV[0];
 
             }
-
-            for (; y<(kernel_order); y++){
+          }
+          output[m][w][h] = (float) sum; // output[kernal][width][height] = calculated sum
+        }
+        // not vectorized
+        for ( c = 0; c < nchannels; c++ ) {
+          for ( x = 0; x < kernel_order; x++) {
+            for ( y = 0; y < kernel_order; y++ ) {
               sum += image[w+x][h+y][c] * kernels[m][c][x][y];
             }
           }
-
-
           output[m][w][h] = (float) sum; // output[kernal][width][height] = calculated sum
-
         }
       }
     }
