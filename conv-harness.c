@@ -327,32 +327,28 @@ void student_conv(float *** image, int16_t **** kernels, float *** output,
 
   // Writing a parallel version of the multichannel_conv function
   // Converting the for loops to fusion loops
+ 
 
+    
   int h, w, x, y, c, m;
-  for(int loopCounter0 = 0; n<(nkernels*width*height); n++)
+  #pragma omp parallel for shared(h, w, x, y, c, m)  
+  for(int loopCounter0 = 0; loopCounter0<(nkernels*width*height); loopCounter0++)
   {
     int m = loopCounter0/(width*height);
     int w = (loopCounter0%(width*height))/height;
     int h = (loopCounter0%(width*height))%height;
     
     double sum = 0.0;
-
-    for(int loopCounter1 = 0; loopCounter1<(nchannels*kernel_order*kernel_order); loopCounter1++)
-    {
-      int c = loopCounter1/(kernel_order*kernel_order);
-      int x = (loopCounter1%(kernel_order*kernel_order))/kernel_order;
-      int y = (loopCounter1%(kernel_order*kernel_order))%kernel_order;
-      
-      sum += image[w+x][h+y][c] * kernels[m][c][x][y];
-
-      if (x == 0)
-      {
-        output[m][w][h] = (float) sum;
-      }
-
-    }
+    for ( c = 0; c < nchannels; c++ ) {
+        for ( x = 0; x < kernel_order; x++) {
+           for ( y = 0; y < kernel_order; y++ ) {
+             sum += image[w+x][h+y][c] * kernels[m][c][x][y];
+           }
+         }
+    output[m][w][h] = (float) sum;
   }
-
+  
+  }
 
   //#pragma omp parallel for private(h, w, x, y, c, m)  
   // for ( m = 0; m < nkernels; m++ ) {
