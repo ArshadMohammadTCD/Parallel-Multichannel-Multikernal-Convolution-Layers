@@ -351,9 +351,9 @@ void student_conv(float *** image, int16_t **** kernels, float *** output,
               // Multiply vectors to format (image1*kernal1, image2*kernal2,...)
 
                 float kernalVal = (float)(kernels[m][c][x][y] << 16 | 0);
-                __m128 kernelV = _mm_set_ps1(kernelVal);
+                __m128 kernelV = _mm_set_ps1(kernalVal);
 
-                __m128 mulV = _mm_mul_ps(imageV, kernalV);
+                __m128 mulV = _mm_mul_ps(imageV, kernelV);
                 __m128 sumV = _mm_hadd_ps(mulV, mulV);
                 // sum of result
                 sum+= mulV[0];
