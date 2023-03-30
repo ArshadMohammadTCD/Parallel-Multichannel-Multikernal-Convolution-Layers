@@ -329,7 +329,7 @@ void student_conv(float *** image, int16_t **** kernels, float *** output,
   // insert your own code instead
   int h, w, x, y, c, m;
   // for some m number of kernals
-  #pragma omp parallel for private(h, w, x, y, c, m)  
+  //#pragma omp parallel for private(h, w, x, y, c, m)  
   for ( m = 0; m < nkernels; m++ ) {
     //int thread = omp_get_thread_num();  // get thread number on creation
   //  printf("[DEBUG] Opened Thread: %d\n", thread);
@@ -352,10 +352,10 @@ void student_conv(float *** image, int16_t **** kernels, float *** output,
                 int tmp3 = image[w+x][h+y+2][c];
                 int tmp4 = image[w+x][h+y+3][c];
                 __m128 imageV = _mm_set_ps(tmp1, tmp2, tmp3, tmp4);
-*/
+*/              
 
                 // load image vector from array
-                float imageArray = {image[w+x][h+y][c], image[w+x][h+y+1][c], image[w+x][h+y+2][c], image[w+x][h+y+3][c]};
+                float imageArray[4] = {image[w+x][h+y][c], image[w+x][h+y+1][c], image[w+x][h+y+2][c], image[w+x][h+y+3][c]};
                 __m128 imageV = _mm_loadu_ps(imageArray);
 /*
                 int temp1 = kernels[m][c][x][y] << 16 | 0; 
@@ -365,7 +365,7 @@ void student_conv(float *** image, int16_t **** kernels, float *** output,
                 __m128i vec = _mm_set_epi32(temp1, temp2, temp3, temp4);
                 __m128 floatvec = _mm_cvtepi32_ps(vec); 
 */
-                float kernalArray = {(float)kernels[m][c][x][y] << 16 | 0, (float)kernels[m][c][x][y+1] << 16 | 0, (float)kernels[m][c][x][y+2] << 16 | 0, (float)kernels[m][c][x][y+3] << 16 | 0 };                
+                float kernalArray[4] = {(float)(kernels[m][c][x][y] << 16 | 0), (float)(kernels[m][c][x][y+1] << 16 | 0), (float)(kernels[m][c][x][y+2] << 16 | 0), (float)(kernels[m][c][x][y+3] << 16 | 0 )};                
                 __m128 kernalV = _mm_loadu_ps(kernalArray);
                 // __m128 kernalV = floatvec;
               // Multiply vectors to format (image1*kernal1, image2*kernal2,...)
