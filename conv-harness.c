@@ -347,8 +347,7 @@ void student_conv(float *** image, int16_t **** kernels, float *** output,
                 float imageArray[4] = {image[w+x][h+y][c], image[w+x][h+y+1][c], image[w+x][h+y+2][c], image[w+x][h+y+3][c]};
                 __m128 imageV = _mm_loadu_ps(imageArray);
                 //float kernalArray[4] = {(float)(kernels[m][c][x][y] << 16 | 0), (float)(kernels[m][c][x][y+1] << 16 | 0), (float)(kernels[m][c][x][y+2] << 16 | 0), (float)(kernels[m][c][x][y+3] << 16 | 0 )};                
-                
-                __m128 kernalV = _mm_loadu_ps(kernalArray);
+                __m128 kernalV = _mm_loadu_ps((float)(kernels[m][c][x][y]));
                 // __m128 kernalV = floatvec;
               // Multiply vectors to format (image1*kernal1, image2*kernal2,...)
                 __m128 mulV = _mm_mul_ps(imageV, kernalV);
