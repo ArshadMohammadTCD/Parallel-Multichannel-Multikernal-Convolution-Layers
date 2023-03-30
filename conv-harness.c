@@ -337,11 +337,9 @@ void student_conv(float *** image, int16_t **** kernels, float *** output,
         double sum = 0.0;
 
 
-        for ( c = 0; c < nchannels-3; c+=4 ) {
-          
-
+        for ( c = 0; c < nchannels; c+=4 ) {
           for (x=0; x< (kernel_order); x++){
-            for (y=0; y<(kernel_order-3); y++){            
+            for (y=0; y<(kernel_order); y++){            
 
 
                 // float imageArray[4] = {image[w+x][h+y][c], image[w+x][h+y][c+1], image[w+x][h+y][c+2], image[w+x][h+y][c+3]};
@@ -350,23 +348,15 @@ void student_conv(float *** image, int16_t **** kernels, float *** output,
 
               // Multiply vectors to format (image1*kernal1, image2*kernal2,...)
 
-                float kernalVal = (float)(kernels[m][c][x][y] << 16 | 0);
+                float kernelVal = (float)(kernels[m][c][x][y]);
                 __m128 kernelV = _mm_set_ps1(kernelVal);
 
-                __m128 mulV = _mm_mul_ps(imageV, kernalV);
+                __m128 mulV = _mm_mul_ps(imageV, kernelV);
                 __m128 sumV = _mm_hadd_ps(mulV, mulV);
+                sumV = _mm_hadd_ps(sumV, sumV);
                 // sum of result
-                sum+= mulV[0];
+                sum += _mm_cvtss_f32(sumV);
 
-            }
-          }
-          output[m][w][h] = (float) sum; // output[kernal][width][height] = calculated sum
-        }
-        // not vectorized
-        for ( c = 0; c < nchannels; c++ ) {
-          for ( x = 0; x < kernel_order; x++) {
-            for ( y = 0; y < kernel_order; y++ ) {
-              sum += image[w+x][h+y][c] * kernels[m][c][x][y];
             }
           }
           output[m][w][h] = (float) sum; // output[kernal][width][height] = calculated sum
