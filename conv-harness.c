@@ -346,37 +346,33 @@ void student_conv(float *** image, int16_t **** kernels, float *** output,
 
           for (x=0; x< (kernel_order); x++){
             for (y=0; y<(kernel_order-3); y+=4){
-
+/*
                 int tmp1 = image[w+x][h+y][c];
                 int tmp2 = image[w+x][h+y+1][c];
                 int tmp3 = image[w+x][h+y+2][c];
                 int tmp4 = image[w+x][h+y+3][c];
                 __m128 imageV = _mm_set_ps(tmp1, tmp2, tmp3, tmp4);
+*/
 
-                
+                // load image vector from array
+                float imageArray = {image[w+x][h+y][c], image[w+x][h+y+1][c], image[w+x][h+y+2][c], image[w+x][h+y+3][c]};
+                __m128 imageV = _mm_loadu_ps(imageV);
+/*
                 int temp1 = kernels[m][c][x][y] << 16 | 0; 
                 int temp2 = kernels[m][c][x][y+1] << 16 | 0;
                 int temp3 = kernels[m][c][x][y+2] << 16 | 0;
                 int temp4 = kernels[m][c][x][y+3] << 16 | 0;
                 __m128i vec = _mm_set_epi32(temp1, temp2, temp3, temp4);
                 __m128 floatvec = _mm_cvtepi32_ps(vec); 
-                
-                __m128 kernalV = floatvec;
-              //__m128 kernalV = _mm_loadu_ps((kernels[m][c][x][y]));
+*/
+                float kernalArray = {(float)kernels[m][c][x][y] << 16 | 0, (float)kernels[m][c][x][y+1] << 16 | 0, (float)kernels[m][c][x][y+2] << 16 | 0, (float)kernels[m][c][x][y+3] << 16 | 0 };                
+                __m128 kernalV = _mm_loadu_ps(kernalArray);
+                // __m128 kernalV = floatvec;
               // Multiply vectors to format (image1*kernal1, image2*kernal2,...)
                 __m128 mulV = _mm_mul_ps(imageV, kernalV);
-              
-
-
                 __m128 sumV = _mm_hadd_ps(mulV, mulV);
+                // sum of result
                 sum+= mulV[0];
- 
-            // add vectors
-             //   sum += mulV[0];
-             //   sum += mulV[1];
-             //   sum += mulV[2];
-             //   sum += mulV[3];
-
 
             }
             //postloop y
