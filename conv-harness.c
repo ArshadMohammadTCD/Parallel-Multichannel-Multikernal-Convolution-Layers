@@ -321,67 +321,34 @@ void multichannel_conv(float *** image, int16_t **** kernels,
 }
 
 /* the fast version of matmul written by the student */
-void student_conv(float *** image, int16_t **** kernels, float *** output,
-               int width, int height, int nchannels, int nkernels,
-               int kernel_order)
-{
-  // this call here is just dummy code that calls the slow, simple, correct version.
-  // insert your own code instead
-  int h, w, x, y, c, m;
-  // for some m number of kernals
-  //#pragma omp parallel for private(h, w, x, y, c, m)  
-  for ( m = 0; m < nkernels; m++ ) {
-    //int thread = omp_get_thread_num();  // get thread number on creation
-  //  printf("[DEBUG] Opened Thread: %d\n", thread);
-    // for each width and height
-    for ( w = 0; w < width; w++ ) {
-      for ( h = 0; h < height; h++ ) {
-        // reset sum
-        double sum = 0.0;
-        // for each layer channel is broken up in array
-//        #pragma omp parallel for private(h, w, x, y, c, m, sum)
-        for ( c = 0; c < nchannels; c++ ) {
-   //       printf("[DEBUG] Opened Thread: %d\n", thread);
-          
+void multichannel_conv(float *** image, int16_t **** kernels, float *** output,
+                       int width, int height, int nchannels, int nkernels, int kernel_order) {
+    int m, c, x, y, w, h;
+    __m128d sum, img, ker, prod;
+    float *out_ptr;
+    int16_t *ker_ptr;
 
-          for (x=0; x< (kernel_order); x++){
-            for (y = 0; y < kernel_order - 3; y += 4) {
-                __m128 imageV = _mm_set_ps(image[w + x][h + y + 3][c],
-                                            image[w + x][h + y + 2][c],
-                                            image[w + x][h + y + 1][c],
-                                            image[w + x][h + y][c]);
-
-                __m128 kernalV = _mm_set_ps((float) (kernels[m][c][x][y + 3] << 16 | 0),
-                                            (float) (kernels[m][c][x][y + 2] << 16 | 0),
-                                            (float) (kernels[m][c][x][y + 1] << 16 | 0),
-                                            (float) (kernels[m][c][x][y] << 16 | 0));
-
-                __m128 mulV = _mm_mul_ps(imageV, kernalV);
-                __m128 sumV = _mm_hadd_ps(mulV, mulV);
-                sum += sumV[0] + sumV[2];
+    for (m = 0; m < nkernels; m++) {
+        for (w = 0; w < width; w++) {
+            for (h = 0; h < height; h++) {
+                sum = _mm_setzero_pd();
+                out_ptr = &output[m][w][h];
+                for (c = 0; c < nchannels; c++) {
+                    ker_ptr = &kernels[m][c][0][0];
+                    for (x = 0; x < kernel_order; x++) {
+                        for (y = 0; y < kernel_order; y++) {
+                            img = _mm_load_sd(&image[w+x][h+y][c]);
+                            ker = _mm_loadl_epi64((__m128i*)ker_ptr);
+                            prod = _mm_mul_pd(img, _mm_cvtepi32_pd(ker));
+                            sum = _mm_add_pd(sum, prod);
+                            ker_ptr++;
+                        }
+                    }
+                }
+                _mm_store_ss(out_ptr, _mm_cvtpd_ps(sum));
             }
-            //postloop y
-            for (; y<(kernel_order); y++){
-              sum += image[w+x][h+y][c] * kernels[m][c][x][y];
-            }
-          }
-          //postloop x
-          //for ( ; x < kernel_order; x++) {
-           // for ( y = 0; y < kernel_order; y++ ) {
-             // sum += image[w+x][h+y][c] * kernels[m][c][x][y];
-            //} 
-         // }
-
-          output[m][w][h] = (float) sum; // output[kernal][width][height] = calculated sum
-  //        printf("[DEBUG] Closed Thread: %d\n", thread);
         }
-      }
     }
-//    printf("[DEBUG] Closed Thread: %d\n", thread);  // print that you closed the thread
-  }
-
-  //multichannel_conv(image, kernels, output, width,
-  //                  height, nchannels, nkernels, kernel_order);
 }
 
 int main(int argc, char ** argv)
