@@ -356,7 +356,7 @@ void student_conv(float *** image, int16_t **** kernels, float *** output,
 
                 // load image vector from array
                 float imageArray = {image[w+x][h+y][c], image[w+x][h+y+1][c], image[w+x][h+y+2][c], image[w+x][h+y+3][c]};
-                __m128 imageV = _mm_loadu_ps(imageV);
+                __m128 imageV = _mm_loadu_ps(imageArray);
 /*
                 int temp1 = kernels[m][c][x][y] << 16 | 0; 
                 int temp2 = kernels[m][c][x][y+1] << 16 | 0;
