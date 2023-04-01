@@ -362,12 +362,15 @@ void student_conv(float *** image, int16_t **** kernels, float *** output,
 
               // Multiply vectors to format (image1*kernal1, image2*kernal2,...)
 
-                float kernelVal1 = (float)(kernels[m][c][x][y]);
-                float kernelVal2 = (float)(kernels[m][c][x][y+1]);
-                float kernelVal3 = (float)(kernels[m][c][x][y+2]);
-                float kernelVal4 = (float)(kernels[m][c][x][y+3]);
+                //float kernelVal1 = (float)(kernels[m][c][x][y]);
+                //float kernelVal2 = (float)(kernels[m][c][x][y+1]);
+                //float kernelVal3 = (float)(kernels[m][c][x][y+2]);
+                //float kernelVal4 = (float)(kernels[m][c][x][y+3]);
 
-                __m128 kernelV = _mm_set_ps(kernelVal1, kernelVal2, kernelVal3, kernelVal4);
+                __m128i tempV = _mm_load_si128((__m128i*)kernels[m][c][x][y]);
+                __m128 kernelV = _mm_cvtepi32_ps(_mm_unpacklo_epi16(tempV, _mm_setzero_si128()));
+
+                //__m128 kernelV = _mm_set_ps(kernelVal1, kernelVal2, kernelVal3, kernelVal4);
 
                 __m128 mulV = _mm_mul_ps(imageV, kernelV);
                 __m128 sumV = _mm_hadd_ps(mulV, mulV);
