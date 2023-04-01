@@ -394,8 +394,8 @@ void student_conv(float *** image, int16_t **** kernels, float *** output,
                 //float kernelVal2 = (float)(kernels[m][c][x][y+1]);
                 //float kernelVal3 = (float)(kernels[m][c][x][y+2]);
                 //float kernelVal4 = (float)(kernels[m][c][x][y+3]);
-
-                __m128i tempV = _mm_load_si128((__m128i*)kernels[m][c][x][y]);
+                
+                __m128i tempV = _mm_loadu_si128(&kernels[m][c][x][y]);
                 __m128 kernelV = _mm_cvtepi32_ps(_mm_unpacklo_epi16(tempV, _mm_setzero_si128()));
 
                 //__m128 kernelV = _mm_set_ps(kernelVal1, kernelVal2, kernelVal3, kernelVal4);
