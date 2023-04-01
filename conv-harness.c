@@ -327,47 +327,36 @@ void student_conv(float *** image, int16_t **** kernels, float *** output,
 
   // Writing a parallel version of the multichannel_conv function
   // Converting the for loops to fusion loops
- 
 
     
   int h, w, x, y, c, m;
-  #pragma omp parallel for shared(h, w, x, y, c, m)  
-  for(int loopCounter0 = 0; loopCounter0<(nkernels*width*height); loopCounter0++)
-  {
-    int m = loopCounter0/(width*height);
-    int w = (loopCounter0%(width*height))/height;
-    int h = (loopCounter0%(width*height))%height;
-    
-    double sum = 0.0;
-    for ( c = 0; c < nchannels; c++ ) {
-        for ( x = 0; x < kernel_order; x++) {
-           for ( y = 0; y < kernel_order; y++ ) {
-             sum += image[w+x][h+y][c] * kernels[m][c][x][y];
-           }
-         }
-    output[m][w][h] = (float) sum;
-  }
   
-  }
-
-  //#pragma omp parallel for private(h, w, x, y, c, m)  
-  // for ( m = 0; m < nkernels; m++ ) {
-  //   for ( w = 0; w < width; w++ ) {
-  //     for ( h = 0; h < height; h++ ) {
-  //       double sum = 0.0;
-  //       for ( c = 0; c < nchannels; c++ ) {
-  //         for ( x = 0; x < kernel_order; x++) {
-  //           for ( y = 0; y < kernel_order; y++ ) {
-  //             sum += image[w+x][h+y][c] * kernels[m][c][x][y];
-  //           }
-  //         }
-  //         output[m][w][h] = (float) sum;
-  //       }
-  //     }
-  //   }
-  // }
+  #pragma omp parallel
+  {
+    int maxLoop = nkernels*width*height;
+    #pragma omp for
+    for(int loopCounter0 = 0; loopCounter0<(maxLoop); loopCounter0++)
+    {
+        int m = loopCounter0/(width*height);
+        int w = (loopCounter0%(width*height))/height;
+        int h = (loopCounter0%(width*height))%height;
+    
+        double sum = 0.0;
+        for ( c = 0; c < nchannels; c++ ) 
+        {
+            for ( x = 0; x < kernel_order; x++)
+            {
+                for ( y = 0; y < kernel_order; y++ ) 
+                {
+                      
+                    sum += image[w+x][h+y][c] * kernels[m][c][x][y];
+                }
+            }
+            output[m][w][h] = (float) sum;
+            }  
+        }
+    }
 }
-
 
 int main(int argc, char ** argv)
 {
