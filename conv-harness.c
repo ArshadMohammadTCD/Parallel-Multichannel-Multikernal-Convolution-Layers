@@ -327,6 +327,9 @@ void student_conv(float *** image, int16_t **** kernels, float *** output,
 {
 
   int h, w, x, y, c, m;
+  
+  float image2[nchannels][width][height];
+
 
   // Transpose the matrix to image[c][w][h]
   for (w = 0; w < width; w++) {
