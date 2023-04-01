@@ -297,6 +297,7 @@ void multichannel_conv(float *** image, int16_t **** kernels,
 		       int nchannels, int nkernels, int kernel_order)
 {
   int h, w, x, y, c, m;
+
   // for some m number of kernals
 
   for ( m = 0; m < nkernels; m++ ) {
@@ -327,6 +328,16 @@ void student_conv(float *** image, int16_t **** kernels, float *** output,
 
   int h, w, x, y, c, m;
 
+  // Transpose the matrix to image[c][w][h]
+  for (w = 0; w < width; w++) {
+        for (h = 0; h < height; h++) {
+            for (c = 0; c < nchannels; c++) {
+                image2[c][w][h] = image[w][h][c];
+            }
+        }
+    }
+
+
   //#pragma omp parallel for private(h, w, x, y, c, m)  
   for ( m = 0; m < nkernels; m++ ) {
 
@@ -337,19 +348,23 @@ void student_conv(float *** image, int16_t **** kernels, float *** output,
         double sum = 0.0;
 
 
-        for ( c = 0; c < nchannels; c+=4 ) {
+        for ( c = 0; c < nchannels; c++ ) {
           for (x=0; x< (kernel_order); x++){
-            for (y=0; y<(kernel_order); y++){            
+            for (y=0; y<(kernel_order); y+=4){            
 
 
                 // float imageArray[4] = {image[w+x][h+y][c], image[w+x][h+y][c+1], image[w+x][h+y][c+2], image[w+x][h+y][c+3]};
-                __m128 imageV = _mm_loadu_ps(&(image[w+x][h+y][c]));
+                __m128 imageV = _mm_loadu_ps(&(image[c][w+x][h+y]));
 
 
               // Multiply vectors to format (image1*kernal1, image2*kernal2,...)
 
-                float kernelVal = (float)(kernels[m][c][x][y]);
-                __m128 kernelV = _mm_set_ps1(kernelVal);
+                float kernelVal1 = (float)(kernels[m][c][x][y]);
+                float kernelVal2 = (float)(kernels[m][c][x][y+1]);
+                float kernelVal3 = (float)(kernels[m][c][x][y+2]);
+                float kernelVal4 = (float)(kernels[m][c][x][y+3]);
+
+                __m128 kernelV = _mm_set_ps(kernelVal1, kernelVal2, kernelVal3, kernelVal4);
 
                 __m128 mulV = _mm_mul_ps(imageV, kernelV);
                 __m128 sumV = _mm_hadd_ps(mulV, mulV);
