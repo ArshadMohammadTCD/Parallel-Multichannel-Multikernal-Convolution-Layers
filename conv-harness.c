@@ -1,33 +1,24 @@
 /* Test and timing harness program for developing a multichannel
    multikernel convolution (as used in deep learning networks)
-
    Note there are some simplifications around this implementation,
    in particular with respect to computing the convolution at edge
    pixels of the image.
-
    Author: David Gregg
    Date:   March 2022
-
    Version 1.7 : Adjusted types for mixed-type computation
-
    Version 1.6 : Modified the code so that the input tensor is float
-
    Version 1.5 : Modified the code so that the input and kernel
                  are tensors of 16-bit integer values
-
    Version 1.4 : Modified the random generator to reduce the range
                  of generated values;
-
    Version 1.3 : Fixed which loop variables were being incremented
                  in write_out();
                  Fixed dimensions of output and control_output 
                  matrices in main function
-
    Version 1.2 : Changed distribution of test data to (hopefully) 
                  eliminate random walk of floating point error;
                  Also introduced checks to restrict kernel-order to
                  a small set of values
-
    Version 1.1 : Fixed bug in code to create 4d matrix
 */
 
@@ -324,87 +315,42 @@ void multichannel_conv(float *** image, int16_t **** kernels,
   }
 }
 
-/* the fast version of matmul written by the student */
 void student_conv(float *** image, int16_t **** kernels, float *** output,
                int width, int height, int nchannels, int nkernels,
                int kernel_order)
 {
-
-  
-
-  /*
-  // this call here is just dummy code that calls the slow, simple, correct version.
-  // insert your own code instead
-  int h, w, x, y, c, m;
-  // for some m number of kernals
-  #pragma omp parallel for private(h, w, x, y, c, m)  
-  for ( m = 0; m < nkernels; m++ ) {
-    int thread = omp_get_thread_num();  // get thread number on creation
-  //  printf("[DEBUG] Opened Thread: %d\n", thread);
-    // for each width and height
-    for ( w = 0; w < width; w++ ) {
-      for ( h = 0; h < height; h++ ) {
-        // reset sum
-        double sum = 0.0;
-        // for each layer channel is broken up in array
-    //    #pragma omp parallel for private(h, w, x, y, c, m, sum)
-        for ( c = 0; c < nchannels; c++ ) {
-   //       printf("[DEBUG] Opened Thread: %d\n", thread);
-          
-
-          for (x=0; x< (kernel_order); x++){
-            for (y=0; y<(kernel_order-3); y+=4){
-
-                int tmp1 = image[w+x][h+y][c];
-                int tmp2 = image[w+x][h+y+1][c];
-                int tmp3 = image[w+x][h+y+2][c];
-                int tmp4 = image[w+x][h+y+3][c];
-                __m128 imageV = _mm_set_ps(tmp1, tmp2, tmp3, tmp4);
-
-                
-                int temp1 = kernels[m][c][x][y] << 16 | 0; 
-                int temp2 = kernels[m][c][x][y+1] << 16 | 0;
-                int temp3 = kernels[m][c][x][y+2] << 16 | 0;
-                int temp4 = kernels[m][c][x][y+3] << 16 | 0;
-                __m128i vec = _mm_set_epi32(temp1, temp2, temp3, temp4);
-                __m128 floatvec = _mm_cvtepi32_ps(vec); 
-                
-                __m128 kernalV = floatvec;
-              //__m128 kernalV = _mm_loadu_ps((kernels[m][c][x][y]));
-              // Multiply vectors to format (image1*kernal1, image2*kernal2,...)
-                __m128 mulV = _mm_mul_ps(imageV, kernalV);
-              
+  // Writing a parallel version of the multichannel_conv function
+  // Converting the for loops to fusion loops
  
-            // add vectors
-                sum += mulV[0];
-                sum += mulV[1];
-                sum += mulV[2];
-                sum += mulV[3];
-
-
+  int h, w, x, y, c, m;
+  
+  #pragma omp parallel
+  {
+    int maxLoop = nkernels*width*height;
+    #pragma omp for
+    for(int loopCounter0 = 0; loopCounter0<(maxLoop); loopCounter0++)
+    {
+        int m = loopCounter0/(width*height);
+        int w = (loopCounter0%(width*height))/height;
+        int h = (loopCounter0%(width*height))%height;
+    
+        double sum = 0.0;
+        for ( c = 0; c < nchannels; c+=4 ) 
+        {
+            for ( x = 0; x < kernel_order; x++)
+            {
+                for ( y = 0; y < kernel_order; y++ ) 
+                {     
+                    sum += image[w+x][h+y][c] * kernels[m][c][x][y];
+                    sum += image[w+x][h+y][c+1] * kernels[m][c+1][x][y];
+                    sum += image[w+x][h+y][c+2] * kernels[m][c+2][x][y];
+                    sum += image[w+x][h+y][c+3] * kernels[m][c+3][x][y];
+                }
             }
-            //postloop y
-            for (; y<(kernel_order); y++){
-              sum += image[w+x][h+y][c] * kernels[m][c][x][y];
-            }
-          }
-          //postloop x
-          //for ( ; x < kernel_order; x++) {
-           // for ( y = 0; y < kernel_order; y++ ) {
-             // sum += image[w+x][h+y][c] * kernels[m][c][x][y];
-            //} 
-         // }
-
-          output[m][w][h] = (float) sum; // output[kernal][width][height] = calculated sum
-  //        printf("[DEBUG] Closed Thread: %d\n", thread);
-        }
-      }
+            output[m][w][h] = (float) sum;
+        }  
     }
-//    printf("[DEBUG] Closed Thread: %d\n", thread);  // print that you closed the thread
   }
-
-  //multichannel_conv(image, kernels, output, width,
-  //                  height, nchannels, nkernels, kernel_order);
 }
 
 int main(int argc, char ** argv)
@@ -416,7 +362,7 @@ int main(int argc, char ** argv)
   float *** image;
   int16_t **** kernels;
   float *** control_output, *** output;
-  long long mul_time;
+  long long student_mul_time, david_mul_time;
   int width, height, kernel_order, nchannels, nkernels;
   struct timeval start_time;
   struct timeval stop_time;
@@ -465,9 +411,24 @@ int main(int argc, char ** argv)
 
   /* record finishing time */
   gettimeofday(&stop_time, NULL);
-  mul_time = (stop_time.tv_sec - start_time.tv_sec) * 1000000L +
+  student_mul_time = (int)(stop_time.tv_sec - start_time.tv_sec) * 1000000L +
     (stop_time.tv_usec - start_time.tv_usec);
-  printf("Student conv time: %lld microseconds\n", mul_time);
+  printf("Student conv time: %lld microseconds\n", student_mul_time);
+  
+  gettimeofday(&start_time, NULL);
+
+  multichannel_conv(image, kernels, output, width,
+                    height, nchannels, nkernels, kernel_order);
+  gettimeofday(&stop_time, NULL);
+
+  david_mul_time = (stop_time.tv_sec - start_time.tv_sec) * 1000000L +
+    (stop_time.tv_usec - start_time.tv_usec);
+  printf("David conv time: %lld microseconds\n", david_mul_time);
+  
+  float ratio_speed_up = (float)david_mul_time/(float)student_mul_time;
+
+  printf("Optimize rate: %f times\n", ratio_speed_up);
+
 
   DEBUGGING(write_out(output, nkernels, width, height));
 
