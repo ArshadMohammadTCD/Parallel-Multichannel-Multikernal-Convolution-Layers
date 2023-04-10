@@ -3,8 +3,11 @@
    Note there are some simplifications around this implementation,
    in particular with respect to computing the convolution at edge
    pixels of the image.
-   Author: David Gregg
-   Date:   March 2022
+   Author 1: Arshad Rehman Mohammed 20334119
+   Author 2: Declan Quinn 20334565
+   Author 3: Ruarí Donaghey 20332113
+   Date:    April 2022
+
    Version 1.7 : Adjusted types for mixed-type computation
    Version 1.6 : Modified the code so that the input tensor is float
    Version 1.5 : Modified the code so that the input and kernel
