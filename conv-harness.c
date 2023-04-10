@@ -1,33 +1,24 @@
 /* Test and timing harness program for developing a multichannel
    multikernel convolution (as used in deep learning networks)
-
    Note there are some simplifications around this implementation,
    in particular with respect to computing the convolution at edge
    pixels of the image.
-
    Author: David Gregg
    Date:   March 2022
-
    Version 1.7 : Adjusted types for mixed-type computation
-
    Version 1.6 : Modified the code so that the input tensor is float
-
    Version 1.5 : Modified the code so that the input and kernel
                  are tensors of 16-bit integer values
-
    Version 1.4 : Modified the random generator to reduce the range
                  of generated values;
-
    Version 1.3 : Fixed which loop variables were being incremented
                  in write_out();
                  Fixed dimensions of output and control_output 
                  matrices in main function
-
    Version 1.2 : Changed distribution of test data to (hopefully) 
                  eliminate random walk of floating point error;
                  Also introduced checks to restrict kernel-order to
                  a small set of values
-
    Version 1.1 : Fixed bug in code to create 4d matrix
 */
 
@@ -342,20 +333,22 @@ void student_conv(float *** image, int16_t **** kernels, float *** output,
         int h = (loopCounter0%(width*height))%height;
     
         double sum = 0.0;
-        for ( c = 0; c < nchannels; c++ ) 
+        for ( c = 0; c < nchannels; c+=4 ) 
         {
             for ( x = 0; x < kernel_order; x++)
             {
                 for ( y = 0; y < kernel_order; y++ ) 
-                {
-                      
+                {     
                     sum += image[w+x][h+y][c] * kernels[m][c][x][y];
+                    sum += image[w+x][h+y][c+1] * kernels[m][c+1][x][y];
+                    sum += image[w+x][h+y][c+2] * kernels[m][c+2][x][y];
+                    sum += image[w+x][h+y][c+3] * kernels[m][c+3][x][y];
                 }
             }
             output[m][w][h] = (float) sum;
-            }  
-        }
+        }  
     }
+  }
 }
 
 int main(int argc, char ** argv)
