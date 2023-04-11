@@ -1,4 +1,4 @@
-## This repo was developed by Arshad Rehman Mohammed and Declan Quinn
+## This repo was developed by Arshad Rehman Mohammed, Declan Quinn and Ruarí Donaghey
 
 
 # Parallel-Multichannel-Multikernal-Convolution-Layers
